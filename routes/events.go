@@ -39,7 +39,7 @@ func createEvent(context *gin.Context) {
 		return
 	}
 
-	err := utils.VerifyToken(token)
+	userId, err := utils.VerifyToken(token)
 	if err != nil {
 		print(err.Error())
 		context.JSON(http.StatusUnauthorized, gin.H{"message": "Not authorized"})
@@ -54,7 +54,7 @@ func createEvent(context *gin.Context) {
 		return
 	}
 
-	event.UserID = 1
+	event.UserID = userId
 
 	err = event.Save()
 	if err != nil {
@@ -100,23 +100,15 @@ func deleteEvent(context *gin.Context) {
 		return
 	}
 
-	_, err = models.GetEventByID(eventId)
+	event, err := models.GetEventByID(eventId)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not get event", "error": err})
 		return
 	}
 
-	var updatedEvent models.Event
-	err = context.ShouldBindJSON(&updatedEvent)
+	err = event.Delete()
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Could not parse request data"})
-		return
-	}
-
-	updatedEvent.ID = int(eventId)
-	err = updatedEvent.Delete()
-	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not update event"})
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not delete event"})
 		return
 	}
 	context.JSON(http.StatusOK, gin.H{"message": "Event deleted sucessfully"})
